@@ -21,6 +21,7 @@ and its place on a 13.8-billion-year timeline.
 
 - [What it does](#what-it-does)
 - [Getting started](#getting-started)
+- [Docker](#docker)
 - [How it works](#how-it-works)
   - [The seven origins](#the-seven-origins)
   - [The silhouette](#the-silhouette)
@@ -52,24 +53,120 @@ and its place on a 13.8-billion-year timeline.
 
 ## Getting started
 
-Requirements: **Node.js 18 or newer**.
+Requirements: **Node.js 18 or newer** and **pnpm**. If you don't have it, the
+recommended way is to enable it through corepack, which ships with Node:
+
+```bash
+corepack enable
+```
+
+Corepack reads the `packageManager` field in `package.json` and uses exactly
+the pnpm version the project is developed with (10.33.0), so there is nothing
+to install by hand.
 
 ```bash
 # 1. Install dependencies
-npm install
+pnpm install
 
 # 2. Start the dev server
-npm run dev          # http://localhost:5173
+pnpm dev             # http://localhost:5173
 
 # 3. Build for production
-npm run build        # emits dist/
+pnpm build           # emits dist/
 
 # 4. Preview the build
-npm run preview
+pnpm preview
 ```
 
 There is nothing else to do: no API keys, no environment variables, no external
 assets to fetch.
+
+> **A note on pnpm 10**: for safety, pnpm 10 does not run dependency install
+> scripts unless they are explicitly allowed. This project needs the one from
+> `esbuild` (the compiler Vite uses), and it is already declared in the
+> `pnpm.onlyBuiltDependencies` field of `package.json`, so there is nothing to
+> do.
+
+If you would rather not install anything on your machine, jump straight to
+[Docker](#docker).
+
+---
+
+## Docker
+
+The build produces a static site, so the final image carries **no Node at all**:
+it is built with pnpm in an intermediate stage and only nginx serving `dist/`
+is shipped. The resulting image is around 60 MB instead of 400.
+
+### Production
+
+```bash
+# Build and start
+docker compose up -d --build      # http://localhost:8080
+
+# Status and logs
+docker compose ps
+docker compose logs -f web
+
+# Stop
+docker compose down
+```
+
+Change the port with the `PORT` variable:
+
+```bash
+PORT=3000 docker compose up -d
+```
+
+Without Compose, with plain Docker:
+
+```bash
+docker build -t human-from-stars .
+docker run -d -p 8080:80 --name human-from-stars human-from-stars
+```
+
+### Developing inside the container
+
+There is a `dev` stage running the Vite server with hot reload. It sits behind
+a profile so a plain `docker compose up` won't start it:
+
+```bash
+docker compose --profile dev up   # http://localhost:5173
+```
+
+The source is mounted from the host, so changes show up instantly.
+`node_modules` deliberately stays inside the container: pnpm builds it out of
+symlinks into its store, and mounting it from the host would break it.
+
+### Publishing under a subdirectory
+
+If the page won't live at the domain root, Vite needs to know at build time via
+the `BASE_PATH` argument:
+
+```bash
+docker build --build-arg BASE_PATH=/human/ -t human-from-stars .
+```
+
+Or in `docker-compose.yml`, by changing `services.web.build.args.BASE_PATH`.
+
+### What's inside
+
+| File | What it's for |
+|---|---|
+| `Dockerfile` | Four stages: `base` (Node + pnpm via corepack), `deps` (cached install), `build` (compilation), `dev` (Vite server) and `production` (nginx). |
+| `docker/nginx.conf` | Gzip compression, immutable caching for hashed assets, no caching for HTML, and SPA fallback. |
+| `docker/security-headers.conf` | Security headers, in a separate file because nginx does not inherit them into `location` blocks that declare their own. |
+| `docker-compose.yml` | A `web` service (production) and a profile-gated `dev` service. |
+| `.dockerignore` | Keeps `node_modules`, `dist`, `.git` and other package managers' lockfiles out. |
+
+The `deps` stage is separate on purpose: as long as `package.json` and
+`pnpm-lock.yaml` don't change, Docker reuses the layer and installs nothing.
+On top of that, `pnpm install` uses a mounted cache (`--mount=type=cache`) for
+the pnpm store, so rebuilds don't re-download packages.
+
+The production container ships a `HEALTHCHECK`, so `docker compose ps` shows
+whether the page actually responds rather than merely whether the process is
+alive.
 
 ---
 
@@ -177,7 +274,14 @@ other.
 Human-from-Stars/
 ├── index.html                 Root document (inline SVG favicon)
 ├── vite.config.js             Vite config (configurable base path)
-├── package.json
+├── package.json               Scripts and pnpm version (packageManager)
+├── pnpm-lock.yaml             pnpm lockfile
+├── Dockerfile                 Multi-stage image: pnpm builds, nginx serves
+├── docker-compose.yml         Production and development services
+├── .dockerignore
+├── docker/
+│   ├── nginx.conf             Compression, caching and SPA fallback
+│   └── security-headers.conf  Reusable security headers
 ├── README.md                  Spanish documentation (primary)
 ├── README.en.md               This document
 └── src/
@@ -260,14 +364,17 @@ same — it just stays silent.
 
 ## Deployment
 
-`npm run build` produces a fully static `dist/` folder: serve it from any host
-with no configuration.
+`pnpm build` produces a fully static `dist/` folder: serve it from any host with
+no configuration.
 
 To publish under a subdirectory (GitHub Pages, for instance):
 
 ```bash
-BASE_PATH=/human-from-stars/ npm run build
+BASE_PATH=/human-from-stars/ pnpm build
 ```
+
+And if you'd rather deploy the container than loose files, see the
+[Docker](#docker) section.
 
 ---
 

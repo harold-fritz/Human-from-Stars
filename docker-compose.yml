@@ -1,0 +1,46 @@
+# =============================================================================
+# Humano de Estrellas · orquestación con Docker Compose
+# Human from Stars · Docker Compose orchestration
+#
+#   docker compose up -d --build            producción en http://localhost:8080
+#   docker compose --profile dev up         desarrollo en http://localhost:5173
+# =============================================================================
+
+services:
+  # ------------------------------------------------------------- producción --
+  web:
+    build:
+      context: .
+      target: production
+      args:
+        # Cambia esto para publicar bajo un subdirectorio, p. ej. /humano/
+        BASE_PATH: /
+    image: human-from-stars:latest
+    container_name: human-from-stars
+    ports:
+      - '${PORT:-8080}:80'
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost/']
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # ------------------------------------------------------------ desarrollo --
+  # Sólo arranca si se pide el perfil: docker compose --profile dev up
+  dev:
+    profiles: ['dev']
+    build:
+      context: .
+      target: dev
+    container_name: human-from-stars-dev
+    ports:
+      - '5173:5173'
+    volumes:
+      # El código se monta desde el host para tener recarga en caliente…
+      - .:/app
+      # …pero node_modules se queda dentro del contenedor (lo instaló pnpm ahí,
+      # con sus enlaces simbólicos; montarlo desde el host lo rompería).
+      - /app/node_modules
+    command: pnpm run dev --host 0.0.0.0

@@ -21,6 +21,7 @@ tiempo real y su lugar en una línea del tiempo de 13 800 millones de años.
 
 - [Qué hace](#qué-hace)
 - [Puesta en marcha](#puesta-en-marcha)
+- [Docker](#docker)
 - [Cómo funciona](#cómo-funciona)
   - [Los siete orígenes](#los-siete-orígenes)
   - [La silueta](#la-silueta)
@@ -52,24 +53,119 @@ tiempo real y su lugar en una línea del tiempo de 13 800 millones de años.
 
 ## Puesta en marcha
 
-Requisitos: **Node.js 18 o superior**.
+Requisitos: **Node.js 18 o superior** y **pnpm**. Si no lo tienes instalado,
+la forma recomendada es activarlo con corepack, que ya viene con Node:
+
+```bash
+corepack enable
+```
+
+Corepack lee el campo `packageManager` de `package.json` y usa exactamente la
+versión de pnpm con la que se desarrolla el proyecto (10.33.0), sin necesidad
+de instalarla a mano.
 
 ```bash
 # 1. Instalar dependencias
-npm install
+pnpm install
 
 # 2. Arrancar el servidor de desarrollo
-npm run dev          # http://localhost:5173
+pnpm dev             # http://localhost:5173
 
 # 3. Compilar para producción
-npm run build        # genera dist/
+pnpm build           # genera dist/
 
 # 4. Previsualizar la compilación
-npm run preview
+pnpm preview
 ```
 
 No hay ningún otro paso: no hay claves de API, ni variables de entorno, ni
 recursos externos que descargar.
+
+> **Nota sobre pnpm 10**: por seguridad, pnpm 10 no ejecuta los scripts de
+> instalación de las dependencias salvo que se autoricen explícitamente. Este
+> proyecto necesita el de `esbuild` (el compilador que usa Vite), y ya está
+> declarado en el campo `pnpm.onlyBuiltDependencies` de `package.json`, así que
+> no hay que hacer nada.
+
+Si prefieres no instalar nada en tu máquina, salta directamente a
+[Docker](#docker).
+
+---
+
+## Docker
+
+La compilación produce una web estática, así que la imagen final **no lleva
+Node**: se construye con pnpm en una etapa intermedia y sólo se publica nginx
+sirviendo `dist/`. La imagen resultante ronda los 60 MB en lugar de 400.
+
+### Producción
+
+```bash
+# Construir y levantar
+docker compose up -d --build      # http://localhost:8080
+
+# Ver el estado y los registros
+docker compose ps
+docker compose logs -f web
+
+# Parar
+docker compose down
+```
+
+El puerto se cambia con la variable `PORT`:
+
+```bash
+PORT=3000 docker compose up -d
+```
+
+Sin Compose, con Docker a secas:
+
+```bash
+docker build -t human-from-stars .
+docker run -d -p 8080:80 --name human-from-stars human-from-stars
+```
+
+### Desarrollo dentro del contenedor
+
+Hay una etapa `dev` con el servidor de Vite y recarga en caliente. Va detrás de
+un perfil para que `docker compose up` normal no la arranque:
+
+```bash
+docker compose --profile dev up   # http://localhost:5173
+```
+
+El código se monta desde el host, así que los cambios se ven al instante.
+`node_modules` se queda dentro del contenedor a propósito: pnpm lo construye
+con enlaces simbólicos a su almacén, y montarlo desde el host lo rompería.
+
+### Publicar en un subdirectorio
+
+Si la página no va a colgar de la raíz del dominio, hay que decírselo a Vite en
+tiempo de compilación mediante el argumento `BASE_PATH`:
+
+```bash
+docker build --build-arg BASE_PATH=/humano/ -t human-from-stars .
+```
+
+O en `docker-compose.yml`, cambiando `services.web.build.args.BASE_PATH`.
+
+### Qué hay dentro
+
+| Fichero | Para qué sirve |
+|---|---|
+| `Dockerfile` | Cuatro etapas: `base` (Node + pnpm por corepack), `deps` (instalación cacheada), `build` (compilación), `dev` (servidor de Vite) y `production` (nginx). |
+| `docker/nginx.conf` | Compresión gzip, caché inmutable para los assets con hash, sin caché para el HTML y fallback de SPA. |
+| `docker/security-headers.conf` | Cabeceras de seguridad, en fichero aparte porque nginx no las hereda en los `location` que declaran las suyas. |
+| `docker-compose.yml` | Servicio `web` (producción) y servicio `dev` bajo perfil. |
+| `.dockerignore` | Deja fuera `node_modules`, `dist`, `.git` y los lockfiles de otros gestores. |
+
+La etapa `deps` está separada a propósito: mientras no cambien `package.json` ni
+`pnpm-lock.yaml`, Docker reutiliza la capa y no vuelve a instalar nada. Además,
+el `pnpm install` usa una caché montada (`--mount=type=cache`) para el almacén
+de pnpm, de modo que las reconstrucciones no vuelven a descargar los paquetes.
+
+El contenedor de producción trae un `HEALTHCHECK`, así que `docker compose ps`
+muestra si la página responde de verdad y no sólo si el proceso vive.
 
 ---
 
@@ -182,7 +278,14 @@ olvidar la otra.
 Human-from-Stars/
 ├── index.html                 Documento raíz (favicon SVG incrustado)
 ├── vite.config.js             Configuración de Vite (base configurable)
-├── package.json
+├── package.json               Scripts y versión de pnpm (packageManager)
+├── pnpm-lock.yaml             Lockfile de pnpm
+├── Dockerfile                 Imagen multietapa: pnpm compila, nginx sirve
+├── docker-compose.yml         Servicios de producción y de desarrollo
+├── .dockerignore
+├── docker/
+│   ├── nginx.conf             Compresión, caché y fallback de SPA
+│   └── security-headers.conf  Cabeceras de seguridad reutilizables
 ├── README.md                  Esta documentación
 ├── README.en.md               Documentación en inglés
 └── src/
@@ -266,14 +369,17 @@ simplemente se queda en silencio.
 
 ## Despliegue
 
-El resultado de `npm run build` es una carpeta `dist/` completamente estática:
+El resultado de `pnpm build` es una carpeta `dist/` completamente estática:
 sirve en cualquier hosting sin configuración.
 
 Para publicar en un subdirectorio (por ejemplo GitHub Pages):
 
 ```bash
-BASE_PATH=/human-from-stars/ npm run build
+BASE_PATH=/human-from-stars/ pnpm build
 ```
+
+Y si prefieres desplegar el contenedor en lugar de los ficheros sueltos, mira
+la sección de [Docker](#docker).
 
 ---
 
