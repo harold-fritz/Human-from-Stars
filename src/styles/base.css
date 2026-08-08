@@ -1,0 +1,270 @@
+/* =========================================================================
+   Base: variables, tipografía y elementos comunes.
+   ========================================================================= */
+
+:root {
+  /* Fondo profundo, casi negro pero con un azul de nebulosa dentro. */
+  --bg: #05060f;
+  --bg-soft: #0a0d1f;
+  --panel: rgba(14, 18, 40, 0.62);
+  --panel-solid: #0d1128;
+  --border: rgba(150, 170, 255, 0.14);
+  --border-strong: rgba(150, 170, 255, 0.3);
+
+  --text: #e8ecff;
+  --text-dim: #a3abd4;
+  --text-faint: #6f77a3;
+
+  --accent: #7ee8fa;
+  --accent-warm: #ffd166;
+  --accent-hot: #ff9ff3;
+
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 22px;
+
+  --shadow-soft: 0 18px 60px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 40px rgba(126, 232, 250, 0.18);
+
+  --font-display: 'Georgia', 'Times New Roman', serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+
+  --max: 1440px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.65;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.15;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: rgba(126, 232, 250, 0.28);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--panel-solid);
+  padding: 0.7rem 1.2rem;
+  border-radius: 0 0 var(--radius) 0;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* ------------------------------------------------------------- estrellas */
+
+.starfield {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -10%, #101736 0%, transparent 60%),
+    radial-gradient(ellipse 90% 60% at 85% 110%, #14102e 0%, transparent 65%),
+    linear-gradient(180deg, #05060f 0%, #070917 45%, #04050d 100%);
+}
+
+.starfield__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Nubes de gas coloreado, muy tenues, moviéndose lentísimamente. */
+.starfield__nebula {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.36;
+  mix-blend-mode: screen;
+  animation: nebula-drift 62s var(--ease-out) infinite alternate;
+}
+
+.starfield__nebula--one {
+  width: 48vw;
+  height: 42vw;
+  top: -8vw;
+  left: -6vw;
+  background: radial-gradient(circle, rgba(78, 106, 255, 0.5), transparent 68%);
+}
+
+.starfield__nebula--two {
+  width: 40vw;
+  height: 38vw;
+  top: 38vh;
+  right: -10vw;
+  background: radial-gradient(circle, rgba(255, 110, 200, 0.36), transparent 68%);
+  animation-duration: 78s;
+  animation-delay: -20s;
+}
+
+.starfield__nebula--three {
+  width: 55vw;
+  height: 34vw;
+  bottom: -12vw;
+  left: 18vw;
+  background: radial-gradient(circle, rgba(255, 190, 100, 0.22), transparent 70%);
+  animation-duration: 90s;
+  animation-delay: -45s;
+}
+
+.starfield__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 110% 90% at 50% 45%, transparent 45%, rgba(0, 0, 0, 0.65) 100%);
+}
+
+@keyframes nebula-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(4vw, 3vh, 0) scale(1.16);
+  }
+}
+
+/* ---------------------------------------------------------------- botones */
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.95rem 2rem;
+  border-radius: 999px;
+  font-size: 0.98rem;
+  letter-spacing: 0.03em;
+  transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out);
+}
+
+.btn--primary {
+  background: linear-gradient(120deg, rgba(126, 232, 250, 0.16), rgba(255, 159, 243, 0.16));
+  border: 1px solid var(--border-strong);
+  color: #fff;
+  box-shadow: 0 0 0 rgba(126, 232, 250, 0);
+}
+
+.btn--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px rgba(126, 232, 250, 0.28);
+}
+
+.btn__pulse {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+  animation: btn-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes btn-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.9);
+    opacity: 0.45;
+  }
+}
+
+.chip {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.25s var(--ease-out);
+}
+
+.chip:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.chip.is-on {
+  color: #05060f;
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* --------------------------------------------- preferencia de menos movimiento */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

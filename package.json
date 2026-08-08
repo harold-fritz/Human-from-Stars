@@ -1,0 +1,21 @@
+{
+  "name": "human-from-stars",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Somos polvo de estrellas / We are star dust - an interactive bilingual visualization of the cosmic origin of the chemical elements in the human body.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  }
+}
