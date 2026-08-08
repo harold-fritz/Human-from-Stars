@@ -181,6 +181,45 @@ de pnpm, de modo que las reconstrucciones no vuelven a descargar los paquetes.
 El contenedor de producción trae un `HEALTHCHECK`, así que `docker compose ps`
 muestra si la página responde de verdad y no sólo si el proceso vive.
 
+### Si algo no sale como esperas
+
+**Sale «Cannot GET /» en el navegador.** Ese mensaje **no lo produce este
+contenedor**: es el 404 por defecto de Express. nginx, cuando algo le falta,
+responde siempre con una página propia que lleva su marca al pie. Si lo ves,
+tu navegador está hablando con otro proceso. La cabecera lo delata en el acto:
+
+```bash
+curl -sI http://localhost:8080/ | grep -iE "server|x-powered-by"
+```
+
+- `Server: nginx` → es este contenedor.
+- `X-Powered-By: Express` → es otra aplicación, y ahí está el problema.
+
+Casi siempre se trata de abrir un puerto distinto del publicado. El que manda
+es el que aparece en la columna `PORTS`:
+
+```bash
+docker compose ps        # p. ej. 0.0.0.0:8080->80/tcp
+docker ps -a             # ¿hay otro contenedor viejo por ahí?
+```
+
+Ojo con un detalle silencioso: **Docker Compose lee automáticamente un fichero
+`.env`** del directorio del proyecto. Si tienes uno con `PORT=3000`, la página
+se publicará en el 3000 aunque tú estés abriendo el 8080. Lo mismo si arrastras
+un `PORT` exportado en la terminal.
+
+Para hablar con el contenedor saltándote cualquier proxy o mapeo:
+
+```bash
+docker exec -it human-from-stars wget -qO- http://localhost/ | head -5
+```
+
+Si eso devuelve el HTML, el contenedor está bien y el fallo está por delante.
+
+**La página carga pero sin estilos ni JavaScript.** Se está sirviendo desde un
+subdirectorio sin haberlo compilado para él. Reconstruye con `BASE_PATH`, como
+se explica más arriba.
+
 ---
 
 ## Cómo funciona

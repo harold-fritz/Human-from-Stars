@@ -182,6 +182,44 @@ The production container ships a `HEALTHCHECK`, so `docker compose ps` shows
 whether the page actually responds rather than merely whether the process is
 alive.
 
+### Troubleshooting
+
+**The browser shows "Cannot GET /".** That message is **not produced by this
+container**: it is Express's default 404. When something is missing, nginx
+always answers with its own branded page. If you see it, your browser is
+talking to a different process. The response headers give it away instantly:
+
+```bash
+curl -sI http://localhost:8080/ | grep -iE "server|x-powered-by"
+```
+
+- `Server: nginx` → that's this container.
+- `X-Powered-By: Express` → that's another application, and there's your problem.
+
+Nearly always it comes down to opening a different port than the published one.
+The authoritative one is whatever the `PORTS` column says:
+
+```bash
+docker compose ps        # e.g. 0.0.0.0:8080->80/tcp
+docker ps -a             # any stale container lying around?
+```
+
+Watch out for one silent detail: **Docker Compose automatically reads a `.env`**
+file from the project directory. If yours has `PORT=3000`, the page is published
+on 3000 even though you're opening 8080. Same goes for a `PORT` left exported in
+your shell.
+
+To reach the container bypassing any proxy or port mapping:
+
+```bash
+docker exec -it human-from-stars wget -qO- http://localhost/ | head -5
+```
+
+If that returns the HTML, the container is fine and the fault lies upstream.
+
+**The page loads but has no styles or JavaScript.** It is being served from a
+subdirectory it wasn't built for. Rebuild with `BASE_PATH`, as explained above.
+
 ---
 
 ## How it works
