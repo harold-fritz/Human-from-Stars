@@ -53,16 +53,21 @@ tiempo real y su lugar en una línea del tiempo de 13 800 millones de años.
 
 ## Puesta en marcha
 
-Requisitos: **Node.js 18 o superior** y **pnpm**. Si no lo tienes instalado,
-la forma recomendada es activarlo con corepack, que ya viene con Node:
+Requisitos: **Node.js 24** (LTS «Krypton») y **pnpm 11.20**. Si no tienes pnpm
+instalado, la forma recomendada es activarlo con corepack, que ya viene con
+Node:
 
 ```bash
 corepack enable
 ```
 
 Corepack lee el campo `packageManager` de `package.json` y usa exactamente la
-versión de pnpm con la que se desarrolla el proyecto (10.33.0), sin necesidad
-de instalarla a mano.
+versión de pnpm con la que se desarrolla el proyecto (11.20.0), sin necesidad
+de instalarla a mano. Hay un `.nvmrc` con la versión de Node, así que con nvm
+basta un `nvm use`.
+
+pnpm 11 exige Node 22.13 o superior por su cuenta, de modo que Node 24 lo
+cumple con holgura.
 
 ```bash
 # 1. Instalar dependencias
@@ -81,11 +86,20 @@ pnpm preview
 No hay ningún otro paso: no hay claves de API, ni variables de entorno, ni
 recursos externos que descargar.
 
-> **Nota sobre pnpm 10**: por seguridad, pnpm 10 no ejecuta los scripts de
-> instalación de las dependencias salvo que se autoricen explícitamente. Este
-> proyecto necesita el de `esbuild` (el compilador que usa Vite), y ya está
-> declarado en el campo `pnpm.onlyBuiltDependencies` de `package.json`, así que
-> no hay que hacer nada.
+> **Nota sobre pnpm 11**: por seguridad, pnpm no ejecuta los scripts de
+> instalación de las dependencias salvo que se autoricen uno a uno, y desde la
+> versión 11 encontrarse uno sin autorizar es un **error**, no un aviso. Este
+> proyecto necesita el de `esbuild` (el compilador que usa Vite) y ya está
+> autorizado en `pnpm-workspace.yaml`, así que no hay que hacer nada:
+>
+> ```yaml
+> allowBuilds:
+>   esbuild: true
+> ```
+>
+> Ese fichero es también el motivo de que ya no haya un campo `pnpm` en
+> `package.json`: desde pnpm 11 los ajustes del proyecto viven todos en
+> `pnpm-workspace.yaml` y el campo antiguo se ignora en silencio.
 
 Si prefieres no instalar nada en tu máquina, salta directamente a
 [Docker](#docker).
@@ -153,7 +167,7 @@ O en `docker-compose.yml`, cambiando `services.web.build.args.BASE_PATH`.
 
 | Fichero | Para qué sirve |
 |---|---|
-| `Dockerfile` | Cuatro etapas: `base` (Node + pnpm por corepack), `deps` (instalación cacheada), `build` (compilación), `dev` (servidor de Vite) y `production` (nginx). |
+| `Dockerfile` | Cinco etapas sobre `node:24-alpine`: `base` (Node + pnpm por corepack), `deps` (instalación cacheada), `build` (compilación), `dev` (servidor de Vite) y `production` (nginx). |
 | `docker/nginx.conf` | Compresión gzip, caché inmutable para los assets con hash, sin caché para el HTML y fallback de SPA. |
 | `docker/security-headers.conf` | Cabeceras de seguridad, en fichero aparte porque nginx no las hereda en los `location` que declaran las suyas. |
 | `docker-compose.yml` | Servicio `web` (producción) y servicio `dev` bajo perfil. |
@@ -280,6 +294,8 @@ Human-from-Stars/
 ├── vite.config.js             Configuración de Vite (base configurable)
 ├── package.json               Scripts y versión de pnpm (packageManager)
 ├── pnpm-lock.yaml             Lockfile de pnpm
+├── pnpm-workspace.yaml        Ajustes de pnpm (scripts de build autorizados)
+├── .nvmrc                     Versión de Node (24)
 ├── Dockerfile                 Imagen multietapa: pnpm compila, nginx sirve
 ├── docker-compose.yml         Servicios de producción y de desarrollo
 ├── .dockerignore
