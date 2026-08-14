@@ -21,7 +21,9 @@ services:
       - '${PORT:-8080}:80'
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost/']
+      # 127.0.0.1, no "localhost": nginx escucha sólo en IPv4 y "localhost"
+      # resuelve antes a ::1 dentro del contenedor.
+      test: ['CMD', 'wget', '--spider', '-q', 'http://127.0.0.1/']
       interval: 30s
       timeout: 3s
       retries: 3

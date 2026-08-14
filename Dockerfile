@@ -83,7 +83,10 @@ RUN chown -R nginx:nginx /usr/share/nginx/html
 
 EXPOSE 80
 
+# 127.0.0.1 explícito, no "localhost": nginx escucha sólo en IPv4 (ver
+# docker/nginx.conf) y "localhost" resuelve antes a ::1, lo que haría fallar
+# la comprobación aunque el sitio se esté sirviendo sin problemas.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --spider -q http://localhost/ || exit 1
+    CMD wget --spider -q http://127.0.0.1/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
