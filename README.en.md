@@ -295,6 +295,16 @@ sample by sample.
 - **Melody** — an original sixteen-note motif over an extended D minor pentatonic scale, played on three-partial bells spaced a variable 2.4–4 s apart, so it never repeats exactly.
 - **The table as an instrument** — hovering a tile plays a note whose pitch rises with the atomic number: you can play the periodic table.
 - **Seven effects**, one per event. The kilonova reproduces the real *chirp* of a neutron-star inspiral: frequency and volume climb until the moment of merger, exactly as in the GW170817 gravitational-wave signal.
+- **Explosions to scale** — a single detonation engine (`_explosion`) driven by a magnitude parameter from 0 to 1. The bigger the event, the deeper the punch, the longer the thunder tail, the more burning debris rains down afterwards and the more times the shock wave rolls back. The ladder runs from a nucleus splintering under a cosmic ray (0.07) to the Big Bang (1.0):
+
+| Event | Magnitude | How it sounds |
+| --- | --- | --- |
+| Cosmic rays | 0.07 | A sharp crack the size of an atom. |
+| Planetary nebula | 0.14 | A muffled sigh as the star sheds its shells. |
+| Type Ia supernova | 0.58 | Dry, metallic detonation, no echoes. |
+| Core-collapse supernova | 0.86 | Implosion, silence, then a whole star bursting. |
+| Kilonova | 0.94 | The most extreme collision physics knows. |
+| Big Bang | 1.00 | Everything that exists, coming out of a point. |
 
 Sound **starts muted** and is only enabled by an explicit gesture (the "Begin
 the journey" button or the header toggle), as browsers require.

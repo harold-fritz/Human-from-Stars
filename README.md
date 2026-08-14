@@ -297,6 +297,16 @@ navegador, muestra a muestra.
 - **Melodía** — un motivo original de dieciséis notas sobre una escala pentatónica de re menor, tocado con campanas de tres parciales y una separación variable de 2,4 a 4 s, de modo que nunca suena igual dos veces.
 - **La tabla como instrumento** — al pasar por cada casilla suena una nota cuya altura sube con el número atómico: se puede "tocar" la tabla periódica.
 - **Siete efectos**, uno por evento. El de la kilonova reproduce el *chirp* real de una espiral de estrellas de neutrones: la frecuencia y el volumen suben hasta el instante de la fusión, igual que en la señal gravitacional GW170817.
+- **Explosiones a escala** — un único motor de detonación (`_explosion`) con un parámetro de magnitud de 0 a 1. Cuanto mayor es el evento, más grave es el golpe, más larga la cola del trueno, más metralla ardiendo cae después y más veces retumba la onda expansiva. La escala va del núcleo que se astilla en un rayo cósmico (0,07) hasta el Big Bang (1,0):
+
+| Evento | Magnitud | Cómo suena |
+| --- | --- | --- |
+| Rayos cósmicos | 0,07 | Un chasquido agudo, del tamaño de un átomo. |
+| Nebulosa planetaria | 0,14 | Un suspiro sordo: la estrella se desprende de sus capas. |
+| Supernova de tipo Ia | 0,58 | Detonación seca y metálica, sin réplicas. |
+| Supernova de colapso | 0,86 | Implosión, silencio y una estrella entera reventando. |
+| Kilonova | 0,94 | La colisión más extrema que conoce la física. |
+| Big Bang | 1,00 | Todo lo que existe, saliendo de un punto. |
 
 El sonido **empieza apagado** y sólo se activa con un gesto explícito (el botón
 «Comenzar el viaje» o el interruptor de la cabecera), como exigen los
