@@ -53,16 +53,21 @@ and its place on a 13.8-billion-year timeline.
 
 ## Getting started
 
-Requirements: **Node.js 18 or newer** and **pnpm**. If you don't have it, the
-recommended way is to enable it through corepack, which ships with Node:
+Requirements: **Node.js 24** (LTS "Krypton") and **pnpm 11.20**. If you don't
+have pnpm, the recommended way is to enable it through corepack, which ships
+with Node:
 
 ```bash
 corepack enable
 ```
 
 Corepack reads the `packageManager` field in `package.json` and uses exactly
-the pnpm version the project is developed with (10.33.0), so there is nothing
-to install by hand.
+the pnpm version the project is developed with (11.20.0), so there is nothing
+to install by hand. There is an `.nvmrc` with the Node version, so with nvm a
+plain `nvm use` is enough.
+
+pnpm 11 requires Node 22.13 or newer on its own, so Node 24 clears that
+comfortably.
 
 ```bash
 # 1. Install dependencies
@@ -81,11 +86,20 @@ pnpm preview
 There is nothing else to do: no API keys, no environment variables, no external
 assets to fetch.
 
-> **A note on pnpm 10**: for safety, pnpm 10 does not run dependency install
-> scripts unless they are explicitly allowed. This project needs the one from
-> `esbuild` (the compiler Vite uses), and it is already declared in the
-> `pnpm.onlyBuiltDependencies` field of `package.json`, so there is nothing to
-> do.
+> **A note on pnpm 11**: for safety, pnpm does not run dependency install
+> scripts unless each one is explicitly allowed, and since version 11 finding
+> an unapproved one is an **error**, not a warning. This project needs the one
+> from `esbuild` (the compiler Vite uses) and it is already allowed in
+> `pnpm-workspace.yaml`, so there is nothing to do:
+>
+> ```yaml
+> allowBuilds:
+>   esbuild: true
+> ```
+>
+> That file is also why there is no longer a `pnpm` field in `package.json`:
+> since pnpm 11 all project settings live in `pnpm-workspace.yaml` and the old
+> field is silently ignored.
 
 If you would rather not install anything on your machine, jump straight to
 [Docker](#docker).
@@ -153,7 +167,7 @@ Or in `docker-compose.yml`, by changing `services.web.build.args.BASE_PATH`.
 
 | File | What it's for |
 |---|---|
-| `Dockerfile` | Four stages: `base` (Node + pnpm via corepack), `deps` (cached install), `build` (compilation), `dev` (Vite server) and `production` (nginx). |
+| `Dockerfile` | Five stages on `node:24-alpine`: `base` (Node + pnpm via corepack), `deps` (cached install), `build` (compilation), `dev` (Vite server) and `production` (nginx). |
 | `docker/nginx.conf` | Gzip compression, immutable caching for hashed assets, no caching for HTML, and SPA fallback. |
 | `docker/security-headers.conf` | Security headers, in a separate file because nginx does not inherit them into `location` blocks that declare their own. |
 | `docker-compose.yml` | A `web` service (production) and a profile-gated `dev` service. |
@@ -167,6 +181,44 @@ the pnpm store, so rebuilds don't re-download packages.
 The production container ships a `HEALTHCHECK`, so `docker compose ps` shows
 whether the page actually responds rather than merely whether the process is
 alive.
+
+### Troubleshooting
+
+**The browser shows "Cannot GET /".** That message is **not produced by this
+container**: it is Express's default 404. When something is missing, nginx
+always answers with its own branded page. If you see it, your browser is
+talking to a different process. The response headers give it away instantly:
+
+```bash
+curl -sI http://localhost:8080/ | grep -iE "server|x-powered-by"
+```
+
+- `Server: nginx` → that's this container.
+- `X-Powered-By: Express` → that's another application, and there's your problem.
+
+Nearly always it comes down to opening a different port than the published one.
+The authoritative one is whatever the `PORTS` column says:
+
+```bash
+docker compose ps        # e.g. 0.0.0.0:8080->80/tcp
+docker ps -a             # any stale container lying around?
+```
+
+Watch out for one silent detail: **Docker Compose automatically reads a `.env`**
+file from the project directory. If yours has `PORT=3000`, the page is published
+on 3000 even though you're opening 8080. Same goes for a `PORT` left exported in
+your shell.
+
+To reach the container bypassing any proxy or port mapping:
+
+```bash
+docker exec -it human-from-stars wget -qO- http://localhost/ | head -5
+```
+
+If that returns the HTML, the container is fine and the fault lies upstream.
+
+**The page loads but has no styles or JavaScript.** It is being served from a
+subdirectory it wasn't built for. Rebuild with `BASE_PATH`, as explained above.
 
 ---
 
@@ -276,6 +328,8 @@ Human-from-Stars/
 ├── vite.config.js             Vite config (configurable base path)
 ├── package.json               Scripts and pnpm version (packageManager)
 ├── pnpm-lock.yaml             pnpm lockfile
+├── pnpm-workspace.yaml        pnpm settings (allowed build scripts)
+├── .nvmrc                     Node version (24)
 ├── Dockerfile                 Multi-stage image: pnpm builds, nginx serves
 ├── docker-compose.yml         Production and development services
 ├── .dockerignore

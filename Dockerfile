@@ -9,7 +9,7 @@
 # just nginx serving dist/. It weighs ~60 MB instead of ~400.
 # =============================================================================
 
-ARG NODE_VERSION=22-alpine
+ARG NODE_VERSION=24-alpine
 ARG NGINX_VERSION=1.27-alpine
 
 
@@ -34,7 +34,10 @@ WORKDIR /app
 # reutiliza esta capa y no vuelve a instalar nada.
 FROM base AS deps
 
-COPY package.json pnpm-lock.yaml ./
+# pnpm-workspace.yaml también hace falta aquí: desde pnpm 11 los ajustes del
+# proyecto (entre ellos qué scripts de instalación se autorizan) viven ahí, y
+# sin él la instalación falla con ERR_PNPM_IGNORED_BUILDS.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile

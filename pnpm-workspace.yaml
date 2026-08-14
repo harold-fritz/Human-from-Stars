@@ -1,0 +1,17 @@
+# Configuración de pnpm.
+#
+# Desde pnpm 11 el campo "pnpm" de package.json ya no se lee: todos los ajustes
+# viven aquí. Ver https://pnpm.io/settings
+#
+# pnpm settings. Since pnpm 11 the "pnpm" field in package.json is no longer
+# read: every setting lives here instead. See https://pnpm.io/settings
+
+# Por seguridad, pnpm no ejecuta los scripts de instalación de las dependencias
+# salvo que se autoricen una a una. Vite compila con esbuild, y su script de
+# postinstall es el que coloca el binario correcto para la plataforma.
+#
+# For safety, pnpm does not run dependency install scripts unless each one is
+# explicitly allowed. Vite compiles with esbuild, whose postinstall script is
+# what places the right binary for the platform.
+allowBuilds:
+  esbuild: true
