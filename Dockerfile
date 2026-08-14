@@ -76,6 +76,8 @@ CMD ["pnpm", "run", "dev", "--host", "0.0.0.0"]
 # -------------------------------------------------------------- producción --
 FROM nginx:${NGINX_VERSION} AS production
 
+USER root
+
 # Configuración propia: compresión, cabeceras de caché y fallback de SPA.
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker/security-headers.conf /etc/nginx/security-headers.conf
@@ -83,6 +85,8 @@ COPY --from=build /app/dist /usr/share/nginx/html
 
 # nginx:alpine trae el usuario "nginx" sin privilegios ya creado.
 RUN chown -R nginx:nginx /usr/share/nginx/html
+
+USER nginx
 
 EXPOSE 80
 
